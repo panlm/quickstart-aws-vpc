@@ -1302,28 +1302,21 @@ Resources:
       Tags:
         - Key: Name
           Value: NATGateway4
-  S3VPCEndpoint:
-    Condition: PrivateSubnetsCondition
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Action: '*'
-            Effect: Allow
-            Resource: '*'
-            Principal: '*'
-      RouteTableIds:
-        - !Ref 'PrivateSubnet1ARouteTable'
-        - !Ref 'PrivateSubnet2ARouteTable'
-        - !If [PrivateSubnets&3AZCondition, !Ref 'PrivateSubnet3ARouteTable', !Ref 'AWS::NoValue']
-        - !If [PrivateSubnets&4AZCondition, !Ref 'PrivateSubnet4ARouteTable', !Ref 'AWS::NoValue']
-        - !If [AdditionalPrivateSubnetsCondition, !Ref 'PrivateSubnet1BRouteTable', !Ref 'AWS::NoValue']
-        - !If [AdditionalPrivateSubnetsCondition, !Ref 'PrivateSubnet2BRouteTable', !Ref 'AWS::NoValue']
-        - !If [AdditionalPrivateSubnets&3AZCondition, !Ref 'PrivateSubnet3BRouteTable', !Ref 'AWS::NoValue']
-        - !If [AdditionalPrivateSubnets&4AZCondition, !Ref 'PrivateSubnet4BRouteTable', !Ref 'AWS::NoValue']
-      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
-      VpcId: !Ref 'VPC'
+  SecurityGroupEksSharedSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      GroupDescription: "eksctl Shared SG"
+      GroupName: eksctl-shared-sg
+      VpcId: !Ref VPC
+  SecurityGroupEksSharedSGIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties: 
+      Description: "eksctl Shared SG"
+      IpProtocol: -1
+      FromPort: -1
+      ToPort: -1
+      GroupId: !Ref SecurityGroupEksSharedSG
+      SourceSecurityGroupId: !Ref SecurityGroupEksSharedSG
   VPCFlowLogsRole:
     Condition: VPCFlowLogsToCloudWatchCondition
     Type: AWS::IAM::Role
@@ -1622,12 +1615,6 @@ Outputs:
     Value: !Ref 'PublicSubnetRouteTable'
     Export:
       Name: !Sub '${AWS::StackName}-PublicSubnetRouteTable'
-  S3VPCEndpoint:
-    Condition: PrivateSubnetsCondition
-    Description: S3 VPC Endpoint
-    Value: !Ref 'S3VPCEndpoint'
-    Export:
-      Name: !Sub '${AWS::StackName}-S3VPCEndpoint'
   VPCCIDR:
     Description: VPC CIDR
     Value: !Ref 'VPCCIDR'
