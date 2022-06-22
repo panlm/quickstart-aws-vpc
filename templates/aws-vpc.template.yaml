@@ -28,6 +28,7 @@ Metadata:
           default: Network Configuration
         Parameters:
           - VPCCIDR
+          - SecurityGroupEksSharedSGName
           - CreatePublicSubnets
           - PublicSubnet1CIDR
           - PublicSubnet2CIDR
@@ -134,6 +135,8 @@ Metadata:
         default: VPC Flow Logs - Traffic Type
       VPCTenancy:
         default: VPC Tenancy
+      SecurityGroupEksSharedSGName:
+        default: Security Group Eks Shared SG
 Parameters:
   AvailabilityZones:
     Description: 'List of Availability Zones to use for the subnets in the VPC. Note: The logical order is preserved.'
@@ -244,7 +247,7 @@ Parameters:
     AllowedPattern: ^([a-zA-Z0-9+\-._:/@]+=[a-zA-Z0-9+\-.,_:/@ *\\"'\[\]\{\}]*)?$
     ConstraintDescription:
       tags must be in format "Key=Value" keys can only contain [a-zA-Z0-9+\-._:/@], values can contain [a-zA-Z0-9+\-._:/@ *\\"'\[\]\{\}]
-    Default: ''
+    Default: 'kubernetes.io/role/internal-elb=1'
     Description: tag to add to private subnets A, in format Key=Value (Optional)
     Type: String
   PrivateSubnetATag3:
@@ -265,7 +268,7 @@ Parameters:
     AllowedPattern: ^([a-zA-Z0-9+\-._:/@]+=[a-zA-Z0-9+\-.,_:/@ *\\"'\[\]\{\}]*)?$
     ConstraintDescription:
       tags must be in format "Key=Value" keys can only contain [a-zA-Z0-9+\-._:/@], values can contain [a-zA-Z0-9+\-._:/@ *\\"'\[\]\{\}]
-    Default: ''
+    Default: 'kubernetes.io/role/internal-elb=1'
     Description: tag to add to private subnets B, in format Key=Value (Optional)
     Type: String
   PrivateSubnetBTag3:
@@ -310,7 +313,7 @@ Parameters:
     AllowedPattern: ^([a-zA-Z0-9+\-._:/@]+=[a-zA-Z0-9+\-.,_:/@ *\\"'\[\]\{\}]*)?$
     ConstraintDescription:
       tags must be in format "Key=Value" keys can only contain [a-zA-Z0-9+\-._:/@], values can contain [a-zA-Z0-9+\-._:/@ *\\"'\[\]\{\}]
-    Default: ''
+    Default: 'kubernetes.io/role/elb=1'
     Description: tag to add to public subnets, in format Key=Value (Optional)
     Type: String
   PublicSubnetTag3:
@@ -371,6 +374,10 @@ Parameters:
       - dedicated
     Default: default
     Description: The allowed tenancy of instances launched into the VPC
+    Type: String
+  SecurityGroupEksSharedSGName:
+    Default: "eks-shared-sg"
+    Description: name of security group for shared SG
     Type: String
 Rules:
   NAT:
@@ -1304,14 +1311,14 @@ Resources:
           Value: NATGateway4
   SecurityGroupEksSharedSG:
     Type: AWS::EC2::SecurityGroup
-    Properties: 
-      GroupDescription: "eksctl Shared SG"
-      GroupName: eksctl-shared-sg
+    Properties:
+      GroupDescription: "EKS Shared SG"
+      GroupName: !Ref 'SecurityGroupEksSharedSGName'
       VpcId: !Ref VPC
   SecurityGroupEksSharedSGIngress:
     Type: AWS::EC2::SecurityGroupIngress
-    Properties: 
-      Description: "eksctl Shared SG"
+    Properties:
+      Description: "EKS Shared SG"
       IpProtocol: -1
       FromPort: -1
       ToPort: -1
@@ -1625,3 +1632,8 @@ Outputs:
     Value: !Ref 'VPC'
     Export:
       Name: !Sub '${AWS::StackName}-VPCID'
+  SecurityGroupEksSharedSG:
+    Description: eks-shared-sg ID
+    Value: !Ref 'SecurityGroupEksSharedSG'
+    Export:
+      Name: !Sub '${AWS::StackName}-SecurityGroupEksSharedSG'
